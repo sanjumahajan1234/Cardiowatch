@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.name }} - CardioWatch{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1rem;">
+    <a href="/" class="btn btn-secondary btn-small"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+</div>
+
+<div class="page-header" style="border-left:5px solid {{ patient.risk_color }}; padding-left:1rem;">
+    <h1 class="page-title">{{ patient.name }}</h1>
+    <p class="page-subtitle">
+        {{ patient.mrn }} | Age {{ patient.age }} | {{ patient.gender|capitalize }}
+        <span class="badge badge-{{ patient.risk_badge }}" style="margin-left:0.5rem;">
+            {{ patient.risk_label }}
+        </span>
+    </p>
+</div>
+
+<div class="grid grid-2">
+    <!-- BP TREND CHART -->
+    <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-chart-line"></i> Blood Pressure Trend (Last 12 Weeks)</span>
+        </div>
+        <canvas id="bpChart" height="100"></canvas>
+        <div style="display:flex; gap:2rem; margin-top:0.75rem; font-size:0.875rem; color:#64748b;">
+            <span><span style="display:inline-block;width:12px;height:12px;background:#dc2626;border-radius:2px;margin-right:4px;"></span>Systolic</span>
+            <span><span style="display:inline-block;width:12px;height:12px;background:#3b82f6;border-radius:2px;margin-right:4px;"></span>Diastolic</span>
+            <span style="margin-left:auto;">AHA Thresholds: Elevated 120+ sys | Stage 1: 130+ | Stage 2: 140+ | Crisis: 180+</span>
+        </div>
+    </div>
+
+    <!-- CURRENT READINGS -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-tachometer-alt"></i> Current Readings</span>
+        </div>
+        <div style="text-align:center; padding:1rem 0;">
+            <div style="font-size:3rem; font-weight:700; color:{{ patient.risk_color }};">
+                {{ patient.latest_systolic }}/{{ patient.latest_diastolic }}
+            </div>
+            <div style="color:#64748b; margin-bottom:1rem;">mmHg</div>
+            <div class="badge badge-{{ patient.risk_badge }}" style="font-size:1rem; padding:0.5rem 1.5rem;">
+                {{ patient.risk_label }}
+            </div>
+        </div>
+        <hr style="border-color:#e2e8f0; margin:1rem 0;">
+        <div style="display:flex; justify-content:space-between;">
+            <div style="text-align:center;">
+                <div style="font-size:1.5rem; font-weight:600; color:#475569;">
+                    <i class="fas fa-heart" style="color:#dc2626;"></i> {{ patient.heart_rate }}
+                </div>
+                <div style="font-size:0.75rem; color:#64748b;">Heart Rate (bpm)</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.25rem; font-weight:600; color:#475569;">
+                    {{ patient.last_visit }}
+                </div>
+                <div style="font-size:0.75rem; color:#64748b;">Last Visit</div>
+            </div>
+        </div>
+        <div style="margin-top:1rem;">
+            <button onclick="sendAlert({{ patient.id }})" class="btn btn-primary" style="width:100%;">
+                <i class="fas fa-bell"></i> Alert Care Team
+            </button>
+        </div>
+    </div>
+
+    <!-- CONDITIONS & MEDICATIONS -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-file-medical"></i> Clinical Summary</span>
+        </div>
+        <div style="margin-bottom:1rem;">
+            <strong style="color:#475569; font-size:0.875rem; text-transform:uppercase;">
+                <i class="fas fa-stethoscope"></i> Active Conditions (FHIR Condition)
+            </strong>
+            <ul style="margin:0.5rem 0 0 1.25rem;">
+                {% for cond in patient.conditions %}
+                <li style="margin-bottom:0.25rem;">{{ cond }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <hr style="border-color:#e2e8f0;">
+        <div>
+            <strong style="color:#475569; font-size:0.875rem; text-transform:uppercase;">
+                <i class="fas fa-pills"></i> Medications (FHIR MedicationRequest)
+            </strong>
+            <ul style="margin:0.5rem 0 0 1.25rem;">
+                {% for med in patient.medications %}
+                <li style="margin-bottom:0.25rem;">{{ med }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <hr style="border-color:#e2e8f0; margin-top:1rem;">
+        <div style="background:#f1f5f9; padding:0.75rem; border-radius:8px; font-size:0.875rem;">
+            <strong>FHIR Source:</strong> HAPI FHIR R4 Demo Server<br>
+            <strong>Patient ID:</strong> {{ patient.fhir_id }}<br>
+            <strong>Resources:</strong> Patient | Observation | Condition | MedicationRequest
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const labels = {{ chart_labels | tojson }};
+const sysData = {{ chart_sys | tojson }};
+const diaData = {{ chart_dia | tojson }};
+
+const ctx = document.getElementById('bpChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Systolic (mmHg)',
+                data: sysData,
+                borderColor: '#dc2626',
+                backgroundColor: 'rgba(220,38,38,0.08)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#dc2626',
+                pointRadius: 4,
+            },
+            {
+                label: 'Diastolic (mmHg)',
+                data: diaData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.08)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#3b82f6',
+                pointRadius: 4,
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            annotation: {},
+            legend: { position: 'top' },
+            tooltip: {
+                callbacks: {
+                    afterBody: (items) => {
+                        const s = items[0]?.parsed?.y;
+                        const d = items[1]?.parsed?.y;
+                        if (s && d) {
+                            if (s > 180 || d > 120) return 'Risk: Hypertensive Crisis';
+                            if (s >= 140 || d >= 90)  return 'Risk: Stage 2 Hypertension';
+                            if (s >= 130 || d >= 80)  return 'Risk: Stage 1 Hypertension';
+                            if (s >= 120)             return 'Risk: Elevated';
+                            return 'Risk: Normal';
+                        }
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: 50, max: 210,
+                title: { display: true, text: 'Blood Pressure (mmHg)' },
+                grid: { color: '#e2e8f0' }
+            }
+        }
+    }
+});
+
+function sendAlert(patientId) {
+    fetch('/api/test-alert', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({patient_id: patientId})
+    })
+    .then(r => r.json())
+    .then(data => alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message));
+}
+</script>
+{% endblock %}

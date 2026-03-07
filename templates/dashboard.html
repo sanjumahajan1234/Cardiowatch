@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}CardioWatch - Patient Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-heartbeat"></i> Patient Risk Dashboard</h1>
+    <p class="page-subtitle">Real-time blood pressure monitoring - AHA/ACC Classification</p>
+</div>
+
+<!-- SUMMARY STATS - mirrors WasteNot's waste_stats cards -->
+<div class="grid grid-5" style="margin-bottom:2rem;">
+    <div class="stat-card card" style="border-top: 4px solid #7c3aed;">
+        <span class="stat-value" style="color:#7c3aed;">{{ crisis_count }}</span>
+        <span class="stat-label">Hypertensive Crisis</span>
+    </div>
+    <div class="stat-card card" style="border-top: 4px solid #dc2626;">
+        <span class="stat-value" style="color:#dc2626;">{{ stage2_count }}</span>
+        <span class="stat-label">Stage 2 HTN</span>
+    </div>
+    <div class="stat-card card" style="border-top: 4px solid #f97316;">
+        <span class="stat-value" style="color:#f97316;">{{ stage1_count }}</span>
+        <span class="stat-label">Stage 1 HTN</span>
+    </div>
+    <div class="stat-card card" style="border-top: 4px solid #eab308;">
+        <span class="stat-value" style="color:#eab308;">{{ elevated_count }}</span>
+        <span class="stat-label">Elevated</span>
+    </div>
+    <div class="stat-card card" style="border-top: 4px solid #16a34a;">
+        <span class="stat-value" style="color:#16a34a;">{{ normal_count }}</span>
+        <span class="stat-label">Normal</span>
+    </div>
+</div>
+
+<!-- CRISIS ALERT BANNER - mirrors WasteNot's expiry warning -->
+{% for p in patients %}
+{% if p.risk_category == 'crisis' %}
+<div class="alert-banner crisis-banner">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>HYPERTENSIVE CRISIS:</strong> {{ p.name }} - {{ p.latest_systolic }}/{{ p.latest_diastolic }} mmHg
+    - Refer to emergency care immediately.
+    <button onclick="sendAlert({{ p.id }})" class="btn btn-sm btn-white">Send Alert</button>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- TEST ALERT BUTTON -->
+<div class="card" style="margin-bottom:1.5rem; background:#f0f9ff; border-left:4px solid #3b82f6;">
+    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+            <strong style="color:#1e40af;"><i class="fas fa-bell"></i> 24/7 Background Monitor Active</strong>
+            <p style="margin:0; color:#475569; font-size:0.875rem;">
+                Server polls FHIR every 5 minutes. Stage 2+ readings trigger automatic email alerts.
+            </p>
+        </div>
+        <button onclick="sendTestAlert()" class="btn btn-primary" style="margin-left:auto;">
+            <i class="fas fa-paper-plane"></i> Send Test Alert
+        </button>
+        <div id="alert-result" style="display:none;"></div>
+    </div>
+</div>
+
+<!-- PATIENT CARDS GRID - mirrors WasteNot's fridge item cards -->
+<div class="grid grid-2">
+{% for p in patients %}
+<div class="card patient-card" style="border-left: 5px solid {{ p.risk_color }};">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+            <h3 style="margin:0; color:#1e293b;">{{ p.name }}</h3>
+            <small style="color:#64748b;">{{ p.mrn }} | Age {{ p.age }} | {{ p.gender|capitalize }}</small>
+        </div>
+        <span class="badge badge-{{ p.risk_badge }}">{{ p.risk_label }}</span>
+    </div>
+
+    <div class="bp-reading" style="margin:1rem 0; background:#f8fafc; padding:0.75rem; border-radius:8px;">
+        <div style="display:flex; gap:2rem; align-items:center;">
+            <div>
+                <div style="font-size:2rem; font-weight:700; color:{{ p.risk_color }};">
+                    {{ p.latest_systolic }}/{{ p.latest_diastolic }}
+                </div>
+                <div style="font-size:0.75rem; color:#64748b;">mmHg | Latest BP</div>
+            </div>
+            <div>
+                <div style="font-size:1.25rem; font-weight:600; color:#475569;">
+                    <i class="fas fa-heart" style="color:#dc2626;"></i> {{ p.heart_rate }}
+                </div>
+                <div style="font-size:0.75rem; color:#64748b;">bpm | Heart Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom:0.75rem;">
+        <strong style="font-size:0.75rem; color:#64748b; text-transform:uppercase;">Conditions</strong>
+        <div style="margin-top:4px;">
+            {% for cond in p.conditions %}
+            <span class="tag">{{ cond }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="margin-bottom:1rem;">
+        <strong style="font-size:0.75rem; color:#64748b; text-transform:uppercase;">Medications</strong>
+        <div style="margin-top:4px;">
+            {% for med in p.medications %}
+            <span class="tag tag-blue">{{ med }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="display:flex; gap:0.5rem;">
+        <a href="/patient/{{ p.id }}" class="btn btn-primary btn-small">
+            <i class="fas fa-chart-line"></i> View Trends
+        </a>
+        <button onclick="sendAlert({{ p.id }})" class="btn btn-secondary btn-small">
+            <i class="fas fa-bell"></i> Alert Team
+        </button>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function sendAlert(patientId) {
+    fetch('/api/test-alert', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({patient_id: patientId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message);
+    });
+}
+
+function sendTestAlert() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    fetch('/api/test-alert', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({patient_id: 4})
+    })
+    .then(r => r.json())
+    .then(data => {
+        const el = document.getElementById('alert-result');
+        el.style.display = 'block';
+        el.style.color = data.success ? '#16a34a' : '#dc2626';
+        el.innerHTML = (data.success ? '[ok] ' : '[fail] ') + data.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Test Alert';
+    });
+}
+</script>
+{% endblock %}

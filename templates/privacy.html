@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Privacy - CardioWatch{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-shield-alt"></i> Privacy & Data Management</h1>
+    <p class="page-subtitle">HIPAA-aligned data practices for CardioWatch</p>
+</div>
+<div class="card" style="max-width:800px;">
+    <h2 style="color:#3b82f6; margin-bottom:1rem;">Data We Use</h2>
+    <ul style="line-height:2; margin-left:1.5rem;">
+        <li>FHIR Patient demographics (name, DOB, gender)</li>
+        <li>Blood pressure Observation resources (LOINC 85354-9)</li>
+        <li>Condition and MedicationRequest resources</li>
+        <li>All demo data is <strong>Synthea-generated synthetic data</strong> - no real patient data</li>
+    </ul>
+    <hr style="border-color:#e2e8f0; margin:1.5rem 0;">
+    <h2 style="color:#3b82f6; margin-bottom:1rem;">Security Practices</h2>
+    <ul style="line-height:2; margin-left:1.5rem;">
+        <li>[ok] No real PHI stored or transmitted</li>
+        <li>[ok] FHIR server access via standard HTTPS</li>
+        <li>[ok] Email alerts sent over TLS (SMTP)</li>
+        <li>[ok] In-memory only - no persistent database in demo mode</li>
+    </ul>
+    <hr style="border-color:#e2e8f0; margin:1.5rem 0;">
+    <a href="/api/export-data" target="_blank" class="btn btn-primary">
+        <i class="fas fa-download"></i> Export Data (JSON)
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}FHIR Status - CardioWatch{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-server"></i> FHIR Server Status</h1>
+    <p class="page-subtitle">Connection to HAPI FHIR R4 Demo Server</p>
+</div>
+<div class="card" style="max-width:600px;">
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        {% if connected %}
+        <span style="font-size:2rem;">[ok]</span>
+        <div>
+            <strong style="color:#16a34a; font-size:1.1rem;">Connected</strong><br>
+            <small style="color:#64748b;">FHIR Version: {{ fhir_version }}</small>
+        </div>
+        {% else %}
+        <span style="font-size:2rem;">[fail]</span>
+        <div>
+            <strong style="color:#dc2626; font-size:1.1rem;">Offline - using demo data</strong><br>
+            <small style="color:#64748b;">Fallback: Synthea-generated in-memory patients</small>
+        </div>
+        {% endif %}
+    </div>
+    <hr style="border-color:#e2e8f0;">
+    <p><strong>Server URL:</strong> <code>{{ fhir_base }}</code></p>
+    <p><strong>Resources Used:</strong> Patient | Observation (LOINC 85354-9) | Condition | MedicationRequest</p>
+    <p><strong>Data:</strong> All demo data is Synthea-generated synthetic patients. No real PHI.</p>
+    <a href="/" class="btn btn-primary" style="margin-top:1rem;"><-- Back to Dashboard</a>
+</div>
+{% endblock %}
