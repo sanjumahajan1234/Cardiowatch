@@ -4,34 +4,44 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title"><i class="fas fa-heartbeat"></i> Patient Risk Dashboard</h1>
-    <p class="page-subtitle">Real-time blood pressure monitoring - AHA/ACC Classification</p>
+    <p class="page-subtitle">Real-time blood pressure monitoring - AHA/ACC Classification
+        {% if using_fhir %}
+        <span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-left:8px;">
+            Live FHIR Data
+        </span>
+        {% else %}
+        <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-left:8px;">
+            Synthea / FHIR R4
+        </span>
+        {% endif %}
+    </p>
 </div>
 
-<!-- SUMMARY STATS - mirrors WasteNot's waste_stats cards -->
+<!-- SUMMARY STATS -->
 <div class="grid grid-5" style="margin-bottom:2rem;">
-    <div class="stat-card card" style="border-top: 4px solid #7c3aed;">
+    <div class="stat-card card" style="border-top:4px solid #7c3aed;">
         <span class="stat-value" style="color:#7c3aed;">{{ crisis_count }}</span>
         <span class="stat-label">Hypertensive Crisis</span>
     </div>
-    <div class="stat-card card" style="border-top: 4px solid #dc2626;">
+    <div class="stat-card card" style="border-top:4px solid #dc2626;">
         <span class="stat-value" style="color:#dc2626;">{{ stage2_count }}</span>
         <span class="stat-label">Stage 2 HTN</span>
     </div>
-    <div class="stat-card card" style="border-top: 4px solid #f97316;">
+    <div class="stat-card card" style="border-top:4px solid #f97316;">
         <span class="stat-value" style="color:#f97316;">{{ stage1_count }}</span>
         <span class="stat-label">Stage 1 HTN</span>
     </div>
-    <div class="stat-card card" style="border-top: 4px solid #eab308;">
+    <div class="stat-card card" style="border-top:4px solid #eab308;">
         <span class="stat-value" style="color:#eab308;">{{ elevated_count }}</span>
         <span class="stat-label">Elevated</span>
     </div>
-    <div class="stat-card card" style="border-top: 4px solid #16a34a;">
+    <div class="stat-card card" style="border-top:4px solid #16a34a;">
         <span class="stat-value" style="color:#16a34a;">{{ normal_count }}</span>
         <span class="stat-label">Normal</span>
     </div>
 </div>
 
-<!-- CRISIS ALERT BANNER - mirrors WasteNot's expiry warning -->
+<!-- CRISIS BANNER -->
 {% for p in patients %}
 {% if p.risk_category == 'crisis' %}
 <div class="alert-banner crisis-banner">
@@ -43,7 +53,37 @@
 {% endif %}
 {% endfor %}
 
-<!-- TEST ALERT BUTTON -->
+<!-- SEARCH AND FILTER BAR -->
+<div class="card" style="margin-bottom:1.5rem; padding:1rem;">
+    <form method="GET" action="/" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <div style="flex:1; min-width:200px;">
+            <input type="text" name="q" value="{{ search_query }}"
+                placeholder="Search by patient name..."
+                style="width:100%; padding:0.5rem 0.75rem; border:1px solid #e2e8f0;
+                       border-radius:6px; font-size:0.9rem;">
+        </div>
+        <div>
+            <select name="risk" style="padding:0.5rem 0.75rem; border:1px solid #e2e8f0;
+                                       border-radius:6px; font-size:0.9rem;">
+                <option value="">All Risk Levels</option>
+                <option value="crisis"   {% if filter_risk=='crisis'   %}selected{% endif %}>Hypertensive Crisis</option>
+                <option value="stage2"   {% if filter_risk=='stage2'   %}selected{% endif %}>Stage 2 HTN</option>
+                <option value="stage1"   {% if filter_risk=='stage1'   %}selected{% endif %}>Stage 1 HTN</option>
+                <option value="elevated" {% if filter_risk=='elevated' %}selected{% endif %}>Elevated</option>
+                <option value="normal"   {% if filter_risk=='normal'   %}selected{% endif %}>Normal</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-small">Filter</button>
+        {% if search_query or filter_risk %}
+        <a href="/" class="btn btn-secondary btn-small">Clear</a>
+        {% endif %}
+    </form>
+    <div style="margin-top:0.5rem; font-size:0.8rem; color:#64748b;">
+        Showing {{ patients|length }} of {{ total_patients }} patients
+    </div>
+</div>
+
+<!-- MONITOR STATUS BAR -->
 <div class="card" style="margin-bottom:1.5rem; background:#f0f9ff; border-left:4px solid #3b82f6;">
     <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
         <div>
@@ -59,17 +99,26 @@
     </div>
 </div>
 
-<!-- PATIENT CARDS GRID - mirrors WasteNot's fridge item cards -->
+<!-- PATIENT CARDS -->
 <div class="grid grid-2">
 {% for p in patients %}
-<div class="card patient-card" style="border-left: 5px solid {{ p.risk_color }};">
+<div class="card patient-card" style="border-left:5px solid {{ p.risk_color }};">
+
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div>
             <h3 style="margin:0; color:#1e293b;">{{ p.name }}</h3>
-            <small style="color:#64748b;">{{ p.mrn }} | Age {{ p.age }} | {{ p.gender|capitalize }}</small>
+            <small style="color:#64748b;">{{ p.mrn }} | Age {{ p.age }} | {{ p.gender }}</small>
         </div>
         <span class="badge badge-{{ p.risk_badge }}">{{ p.risk_label }}</span>
     </div>
+
+    <!-- STALE READING WARNING -->
+    {% if p.stale %}
+    <div style="background:#fef9c3; border:1px solid #fde047; border-radius:6px;
+                padding:0.4rem 0.75rem; margin:0.5rem 0; font-size:0.8rem; color:#854d0e;">
+        <i class="fas fa-clock"></i> No reading in {{ p.days_since_reading }} days - follow-up needed
+    </div>
+    {% endif %}
 
     <div class="bp-reading" style="margin:1rem 0; background:#f8fafc; padding:0.75rem; border-radius:8px;">
         <div style="display:flex; gap:2rem; align-items:center;">
@@ -84,6 +133,19 @@
                     <i class="fas fa-heart" style="color:#dc2626;"></i> {{ p.heart_rate }}
                 </div>
                 <div style="font-size:0.75rem; color:#64748b;">bpm | Heart Rate</div>
+            </div>
+            <!-- TREND INDICATOR -->
+            <div style="margin-left:auto; text-align:center;">
+                {% if p.trend == 'worsening' %}
+                <div style="color:#dc2626; font-size:1.5rem;"><i class="fas fa-arrow-trend-up"></i></div>
+                <div style="font-size:0.7rem; color:#dc2626;">Worsening</div>
+                {% elif p.trend == 'improving' %}
+                <div style="color:#16a34a; font-size:1.5rem;"><i class="fas fa-arrow-trend-down"></i></div>
+                <div style="font-size:0.7rem; color:#16a34a;">Improving</div>
+                {% else %}
+                <div style="color:#64748b; font-size:1.5rem;"><i class="fas fa-minus"></i></div>
+                <div style="font-size:0.7rem; color:#64748b;">Stable</div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -115,6 +177,11 @@
         </button>
     </div>
 </div>
+{% else %}
+<div class="card" style="grid-column:1/-1; text-align:center; padding:2rem; color:#64748b;">
+    No patients match your search.
+    <a href="/" style="margin-left:8px;">Clear filters</a>
+</div>
 {% endfor %}
 </div>
 {% endblock %}
@@ -128,9 +195,7 @@ function sendAlert(patientId) {
         body: JSON.stringify({patient_id: patientId})
     })
     .then(r => r.json())
-    .then(data => {
-        alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message);
-    });
+    .then(data => { alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message); });
 }
 
 function sendTestAlert() {

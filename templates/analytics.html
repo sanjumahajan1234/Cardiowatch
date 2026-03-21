@@ -1,9 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Analytics - CardioWatch{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title"><i class="fas fa-chart-bar"></i> Population Analytics</h1>
-    <p class="page-subtitle">Aggregate BP risk distribution across {{ total_patients }} patients</p>
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+    <div>
+        <h1 class="page-title"><i class="fas fa-chart-bar"></i> Population Analytics</h1>
+        <p class="page-subtitle">Aggregate BP risk distribution across {{ total_patients }} patients
+            {% if using_fhir %}
+            <span style="background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-left:8px;">Live FHIR Data</span>
+            {% else %}
+            <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:12px;font-size:0.75rem;margin-left:8px;">Synthea / FHIR R4</span>
+            {% endif %}
+        </p>
+    </div>
+    <a href="/analytics/report" class="btn btn-primary btn-small">
+        <i class="fas fa-download"></i> Download Population Report
+    </a>
 </div>
 
 <div class="grid grid-2">
@@ -38,6 +49,69 @@
         </table>
     </div>
 </div>
+
+<!-- WORSENING TREND PATIENTS -->
+{% if worsening_patients %}
+<div class="card" style="margin-top:1.5rem; border-left:4px solid #dc2626;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-arrow-trend-up" style="color:#dc2626;"></i> Worsening Trend Patients</span>
+    </div>
+    <table style="width:100%; border-collapse:collapse;">
+        <tr style="background:#f8fafc;">
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">Patient</th>
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">MRN</th>
+            <th style="padding:8px 10px; text-align:center; border-bottom:1px solid #e2e8f0;">Latest BP</th>
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">Risk Level</th>
+        </tr>
+        {% for p in worsening_patients %}
+        <tr>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9;">
+                <a href="/patient/{{ p.id }}" style="color:#1e40af;">{{ p.name }}</a>
+            </td>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9; color:#64748b;">{{ p.mrn }}</td>
+            <td style="padding:8px 10px; text-align:center; font-weight:600; border-bottom:1px solid #f1f5f9; color:{{ p.risk_color }};">
+                {{ p.latest_systolic }}/{{ p.latest_diastolic }}
+            </td>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9;">
+                <span class="badge badge-{{ p.risk_badge }}">{{ p.risk_label }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<!-- STALE READINGS -->
+{% if stale_patients %}
+<div class="card" style="margin-top:1.5rem; border-left:4px solid #eab308;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-clock" style="color:#eab308;"></i> Patients with No Recent Reading (30+ days)</span>
+    </div>
+    <table style="width:100%; border-collapse:collapse;">
+        <tr style="background:#f8fafc;">
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">Patient</th>
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">MRN</th>
+            <th style="padding:8px 10px; text-align:center; border-bottom:1px solid #e2e8f0;">Days Since Last Reading</th>
+            <th style="padding:8px 10px; text-align:left; border-bottom:1px solid #e2e8f0;">Risk Level</th>
+        </tr>
+        {% for p in stale_patients %}
+        <tr>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9;">
+                <a href="/patient/{{ p.id }}" style="color:#1e40af;">{{ p.name }}</a>
+            </td>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9; color:#64748b;">{{ p.mrn }}</td>
+            <td style="padding:8px 10px; text-align:center; font-weight:600; border-bottom:1px solid #f1f5f9; color:#854d0e;">
+                {{ p.days_since_reading }} days
+            </td>
+            <td style="padding:8px 10px; border-bottom:1px solid #f1f5f9;">
+                <span class="badge badge-{{ p.risk_badge }}">{{ p.risk_label }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
 {% endblock %}
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
