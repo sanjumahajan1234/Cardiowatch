@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Login - CardioWatch{% endblock %}
+
+{% block content %}
+<div style="max-width:420px; margin:4rem auto;">
+    <div class="card" style="border-top:4px solid #dc2626; padding:2rem;">
+
+        <div style="text-align:center; margin-bottom:2rem;">
+            <div style="font-size:2.5rem; color:#dc2626; margin-bottom:0.5rem;">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <h2 style="margin:0; color:#1e293b;">CardioWatch</h2>
+            <p style="color:#64748b; margin:0.25rem 0 0;">Clinical Access - Authorised Personnel Only</p>
+        </div>
+
+        {% if error %}
+        <div style="background:#fee2e2; border:1px solid #fca5a5; color:#dc2626;
+                    padding:0.75rem 1rem; border-radius:6px; margin-bottom:1rem;
+                    font-size:0.9rem;">
+            <i class="fas fa-exclamation-circle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login">
+            <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-size:0.875rem; font-weight:600;
+                              color:#374151; margin-bottom:0.4rem;">
+                    Access Password
+                </label>
+                <input type="password" name="password" autofocus
+                    placeholder="Enter clinical access password"
+                    style="width:100%; padding:0.6rem 0.75rem; border:1px solid #d1d5db;
+                           border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:0.65rem;">
+                <i class="fas fa-sign-in-alt"></i> Sign In
+            </button>
+        </form>
+
+        <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid #e2e8f0;
+                    font-size:0.8rem; color:#94a3b8; text-align:center;">
+            This system contains synthetic patient data only.<br>
+            No real patient health information is stored or displayed.
+        </div>
+    </div>
+</div>
+{% endblock %}
