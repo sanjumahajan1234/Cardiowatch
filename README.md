@@ -62,4 +62,3 @@ Group 83, CS 6440 Spring 2026, Georgia Institute of Technology
 - Sanjay Mahajan
 - Karan Shrivastava
 - Aasish S. Virjala
-- Eduardo A. Camacho-Lopez
