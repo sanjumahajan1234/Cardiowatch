@@ -1,23 +1,21 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 from datetime import datetime, timedelta
+import os
 import random
 import smtplib
 from email.mime.text import MIMEText
 import threading
 import time
 import requests as http_requests
-import json
 from functools import wraps
-from io import BytesIO
 
 app = Flask(__name__)
-import os
-app.secret_key = os.urandom(24)  # New key on every restart clears all sessions
+app.secret_key = os.getenv("CARDIOWATCH_SECRET_KEY", "dev-only-change-me")
 
 # ============================================================================
 # LOGIN - simple single-password clinical access gate
 # ============================================================================
-CARDIOWATCH_PASSWORD = "cardiowatch2026"
+CARDIOWATCH_PASSWORD = os.getenv("CARDIOWATCH_PASSWORD", "cardiowatch2026")
 
 def login_required(f):
     @wraps(f)
@@ -347,34 +345,48 @@ USING_FHIR = False
 
 def load_patients():
     """
-    Loads the clean Synthea-generated synthetic cohort for the dashboard.
-    The HAPI FHIR server is still queried for the FHIR Status page to prove
-    live connectivity, but patient data comes from the controlled synthetic
-    dataset to ensure quality and consistency. This avoids the data quality
-    issues common on public FHIR sandboxes (duplicates, missing names,
-    implausible observation dates uploaded by third parties).
+    Attempts live HAPI FHIR patient loading first.
+    Falls back to the built-in synthetic cohort if FHIR is unavailable
+    or returns no usable BP observations.
     """
     global PATIENTS, USING_FHIR
-    print("[STARTUP] Loading clean synthetic patient cohort...")
+    print("[STARTUP] Attempting live FHIR patient load...")
+    raw_patients = fetch_fhir_patients(limit=12)
+    if raw_patients:
+        built = []
+        for idx, raw in enumerate(raw_patients, start=1):
+            record = build_patient_record(raw, idx)
+            if record:
+                built.append(record)
+
+        if built:
+            PATIENTS = sorted(
+                built,
+                key=lambda p: BP_CATEGORIES[p['risk_category']]['priority'],
+                reverse=True,
+            )
+            USING_FHIR = True
+            print(f"[STARTUP] Loaded {len(PATIENTS)} live FHIR patients.")
+            return
+
+    print("[STARTUP] Live FHIR load unavailable or empty. Using synthetic fallback cohort.")
     PATIENTS = list(DEMO_PATIENTS_RAW)
     USING_FHIR = False
     print(f"[STARTUP] Loaded {len(PATIENTS)} synthetic patients.")
-    try:
-        resp = http_requests.get(f"{FHIR_BASE}/metadata", timeout=5)
-        if resp.status_code == 200:
-            print("[STARTUP] HAPI FHIR server reachable - connection verified for status page.")
-    except Exception:
-        print("[STARTUP] HAPI FHIR server unreachable - status page will show offline.")
 
 # ============================================================================
 # EMAIL ALERT SYSTEM
 # ============================================================================
 
-ALERT_EMAIL   = "teamjugaad2@gmail.com"
-SMTP_PASSWORD = "nerzvewokletnzvq"
+ALERT_EMAIL   = os.getenv("CARDIOWATCH_ALERT_EMAIL", "")
+SMTP_PASSWORD = os.getenv("CARDIOWATCH_SMTP_PASSWORD", "")
 
 def send_bp_alert(patient_name, systolic, diastolic, risk_label, recipient_email=ALERT_EMAIL):
     """Send cardiac risk email alert."""
+    if not ALERT_EMAIL or not SMTP_PASSWORD:
+        print("[EMAIL] Alert skipped: SMTP credentials not configured.")
+        return False
+
     subject = f"[CardioWatch Alert] {patient_name}: {risk_label}"
     body = f"""CardioWatch Clinical Alert
 ===========================
@@ -472,6 +484,7 @@ def inject_globals():
 # ============================================================================
 
 @app.route("/")
+@login_required
 def dashboard():
     search_query  = request.args.get('q', '').strip().lower()
     filter_risk   = request.args.get('risk', '').strip().lower()
@@ -600,7 +613,10 @@ def fhir_status():
 # -- API ------------------------------------------------------------------
 
 @app.route('/api/test-alert', methods=['POST'])
+@login_required
 def test_alert():
+    if not PATIENTS:
+        return jsonify({'success': False, 'message': 'No patients loaded'}), 503
     data       = request.json or {}
     patient_id = data.get('patient_id', 4)
     patient    = next((p for p in PATIENTS if p['id'] == patient_id), PATIENTS[0])
@@ -614,6 +630,7 @@ def test_alert():
         return jsonify({'success': False, 'message': 'Email failed - check SMTP config'})
 
 @app.route('/api/classify-bp', methods=['POST'])
+@login_required
 def api_classify_bp():
     data    = request.json or {}
     sys_val = data.get('systolic')
@@ -628,6 +645,7 @@ def api_classify_bp():
     })
 
 @app.route('/api/patient/<int:patient_id>/latest')
+@login_required
 def api_patient_latest(patient_id):
     patient = next((p for p in PATIENTS if p['id'] == patient_id), None)
     if not patient:
@@ -644,6 +662,7 @@ def api_patient_latest(patient_id):
     })
 
 @app.route('/api/export-data')
+@login_required
 def export_data():
     export = {
         'export_date': datetime.now().isoformat(),
@@ -710,7 +729,10 @@ def patient_report(patient_id):
     lines.append("=" * 60)
     lines.append("CARDIOWATCH CLINICAL REPORT")
     lines.append("Generated: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    lines.append("Data source: HAPI FHIR R4 (hapi.fhir.org)")
+    lines.append(
+        "Data source: " +
+        ("HAPI FHIR R4 (hapi.fhir.org)" if USING_FHIR else "Synthetic fallback dataset")
+    )
     lines.append("=" * 60)
     lines.append("")
     lines.append("PATIENT INFORMATION")
