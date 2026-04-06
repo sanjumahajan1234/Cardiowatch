@@ -119,10 +119,10 @@
 new Chart(document.getElementById('pieChart'), {
     type: 'doughnut',
     data: {
-        labels: {{ BP_CATEGORIES.values() | map(attribute='label') | list | tojson }},
+        labels: {{ BP_CATEGORIES.values() | map(attribute='label') | list | tojson | safe }},
         datasets: [{
-            data: {{ category_counts.values() | list | tojson }},
-            backgroundColor: {{ BP_CATEGORIES.values() | map(attribute='color') | list | tojson }},
+            data: {{ category_counts.values() | list | tojson | safe }},
+            backgroundColor: {{ BP_CATEGORIES.values() | map(attribute='color') | list | tojson | safe }},
         }]
     },
     options: { responsive: true, plugins: { legend: { position: 'right' } } }

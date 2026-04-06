@@ -22,7 +22,25 @@ Install dependencies:
 
     pip install flask requests fhir.resources
 
+Configure environment variables (recommended):
+
+    CARDIOWATCH_SECRET_KEY=change-me
+    CARDIOWATCH_PASSWORD=cardiowatch2026
+    CARDIOWATCH_ALERT_EMAIL=you@example.com
+    CARDIOWATCH_SMTP_PASSWORD=your-app-password
+
+Notes:
+- If SMTP variables are not set, alert emails are safely skipped.
+- The app attempts live FHIR loading first, then falls back to synthetic demo data.
+
 ## Running the app
+
+### Option 1: All-in-one launcher (recommended)
+
+- Linux/macOS: `./start.sh` or `python start.py`
+- Windows: `start.bat` or `python start.py`
+
+### Option 2: Manual
 
     python app.py
 
@@ -39,9 +57,15 @@ Then open a browser and go to:
 - /fhir-status   Live connection status to HAPI FHIR server
 - /privacy       Data handling disclosure
 
+All dashboard and API pages require login via `/login`.
+
 ## File structure
 
     app.py
+    start.sh
+    start.bat
+    start.py
+    Karan.md
     templates/
         base.html
         dashboard.html
