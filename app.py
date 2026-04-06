@@ -488,6 +488,7 @@ def inject_globals():
 def dashboard():
     search_query  = request.args.get('q', '').strip().lower()
     filter_risk   = request.args.get('risk', '').strip().lower()
+    last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     patients = list(PATIENTS)
 
@@ -515,6 +516,7 @@ def dashboard():
         all_patients=all_patients,
         search_query=search_query,
         filter_risk=filter_risk,
+        last_updated=last_updated,
         crisis_count=  sum(1 for p in all_patients if p['risk_category'] == 'crisis'),
         stage2_count=  sum(1 for p in all_patients if p['risk_category'] == 'stage2'),
         stage1_count=  sum(1 for p in all_patients if p['risk_category'] == 'stage1'),
