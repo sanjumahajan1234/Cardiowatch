@@ -81,10 +81,13 @@
                 <div style="font-size:0.75rem; color:#64748b;">Last Reading</div>
             </div>
         </div>
-        <div style="margin-top:1rem;">
+        <div style="margin-top:1rem; display:flex; flex-direction:column; gap:0.5rem;">
             <button onclick="sendAlert({{ patient.id }})" class="btn btn-primary" style="width:100%;">
                 <i class="fas fa-bell"></i> Alert Care Team
             </button>
+            <a href="/patient/{{ patient.id }}/report" class="btn btn-secondary" style="width:100%; text-align:center; justify-content:center;">
+                <i class="fas fa-download"></i> Download Clinical Report
+            </a>
         </div>
     </div>
 
@@ -123,6 +126,94 @@
     </div>
 
 </div>
+
+<!-- OBSERVATION HISTORY TABLE -->
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="card-title"><i class="fas fa-table"></i> Full Observation History</span>
+        <span style="font-size:0.8rem; color:#94a3b8;">{{ patient.observations|length }} readings total</span>
+    </div>
+    <div style="overflow-y:auto; max-height:300px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+            <thead style="position:sticky; top:0; background:white; z-index:1;">
+                <tr style="background:#f8fafc;">
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #e2e8f0;">#</th>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #e2e8f0;">Date</th>
+                    <th style="padding:10px; text-align:center; border-bottom:2px solid #e2e8f0;">Systolic</th>
+                    <th style="padding:10px; text-align:center; border-bottom:2px solid #e2e8f0;">Diastolic</th>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #e2e8f0;">Classification</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obs in patient.observations|reverse %}
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:8px 10px; color:#94a3b8; font-size:0.8rem;">{{ loop.index }}</td>
+                    <td style="padding:8px 10px; font-weight:500;">{{ obs.date.strftime('%b %d, %Y') }}</td>
+                    <td style="padding:8px 10px; text-align:center; font-weight:600;
+                               color:{{ BP_CATEGORIES[obs.category].color }};">
+                        {{ obs.systolic }}
+                    </td>
+                    <td style="padding:8px 10px; text-align:center; font-weight:600;
+                               color:{{ BP_CATEGORIES[obs.category].color }};">
+                        {{ obs.diastolic }}
+                    </td>
+                    <td style="padding:8px 10px;">
+                        <span class="badge badge-{{ BP_CATEGORIES[obs.category].badge }}">
+                            {{ BP_CATEGORIES[obs.category].label }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CLINICIAN NOTES -->
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-clipboard"></i> Clinician Notes</span>
+    </div>
+
+    <div style="margin-bottom:1.25rem;">
+        <textarea id="note-input" placeholder="Add a clinical observation, follow-up plan, or action taken..."
+            style="width:100%; padding:0.75rem; border:1px solid #d1d5db; border-radius:8px;
+                   font-size:0.875rem; resize:vertical; min-height:90px; font-family:inherit;
+                   box-sizing:border-box;"></textarea>
+        <button onclick="submitNote()" class="btn btn-primary" style="margin-top:0.5rem;">
+            <i class="fas fa-plus"></i> Add Note
+        </button>
+    </div>
+
+    <div id="notes-list">
+        {% if notes %}
+            {% for note in notes %}
+            <div id="note-{{ note.id }}" style="border:1px solid #e2e8f0; border-radius:8px;
+                padding:0.85rem 1rem; margin-bottom:0.75rem; background:#f8fafc;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                    <p style="margin:0; color:#1e293b; line-height:1.5; font-size:0.875rem;">{{ note.text }}</p>
+                    <button onclick="deleteNote('{{ note.id }}')"
+                        style="background:none; border:none; color:#94a3b8; cursor:pointer; padding:0;
+                               font-size:0.85rem; flex-shrink:0;"
+                        title="Delete note">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div style="margin-top:0.5rem; font-size:0.75rem; color:#94a3b8;">
+                    <i class="fas fa-clock"></i> {{ note.timestamp }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div id="no-notes-msg" style="text-align:center; color:#94a3b8; padding:1.5rem;
+                 font-size:0.875rem; border:1px dashed #e2e8f0; border-radius:8px;">
+                <i class="fas fa-clipboard" style="font-size:1.5rem; margin-bottom:0.5rem; display:block;"></i>
+                No notes yet. Add a clinical observation above.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -225,7 +316,57 @@ function sendAlert(patientId) {
         body: JSON.stringify({patient_id: patientId})
     })
     .then(r => r.json())
-    .then(data => alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message));
+    .then(data => CardioWatchUI.showToast(data.message, data.success ? 'success' : 'error'));
+}
+
+function submitNote() {
+    const input = document.getElementById('note-input');
+    const text  = input.value.trim();
+    if (!text) {
+        CardioWatchUI.showToast('Please write a note before submitting.', 'error');
+        return;
+    }
+    fetch('/patient/{{ patient.id }}/note', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ text: text })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) { CardioWatchUI.showToast('Failed to save note.', 'error'); return; }
+        input.value = '';
+        const noMsg = document.getElementById('no-notes-msg');
+        if (noMsg) noMsg.remove();
+        const list = document.getElementById('notes-list');
+        const div = document.createElement('div');
+        div.id = 'note-' + data.note.id;
+        div.style.cssText = 'border:1px solid #e2e8f0;border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem;background:#f8fafc;';
+        div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+                <p style="margin:0;color:#1e293b;line-height:1.5;font-size:0.875rem;">${data.note.text}</p>
+                <button onclick="deleteNote('${data.note.id}')"
+                    style="background:none;border:none;color:#94a3b8;cursor:pointer;padding:0;font-size:0.85rem;flex-shrink:0;"
+                    title="Delete note"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="margin-top:0.5rem;font-size:0.75rem;color:#94a3b8;">
+                <i class="fas fa-clock"></i> ${data.note.timestamp}
+            </div>`;
+        list.insertBefore(div, list.firstChild);
+        CardioWatchUI.showToast('Note saved.', 'success');
+    })
+    .catch(() => CardioWatchUI.showToast('Error saving note.', 'error'));
+}
+
+function deleteNote(noteId) {
+    fetch('/patient/{{ patient.id }}/note/' + noteId, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const el = document.getElementById('note-' + noteId);
+            if (el) el.remove();
+            CardioWatchUI.showToast('Note deleted.', 'success');
+        }
+    });
 }
 </script>
 {% endblock %}

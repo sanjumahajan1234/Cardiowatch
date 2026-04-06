@@ -195,13 +195,13 @@ function sendAlert(patientId) {
         body: JSON.stringify({patient_id: patientId})
     })
     .then(r => r.json())
-    .then(data => { alert(data.success ? '[ok] ' + data.message : '[fail] ' + data.message); });
+    .then(data => CardioWatchUI.showToast(data.message, data.success ? 'success' : 'error'));
 }
 
 function sendTestAlert() {
     const btn = event.target;
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
     fetch('/api/test-alert', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -209,10 +209,7 @@ function sendTestAlert() {
     })
     .then(r => r.json())
     .then(data => {
-        const el = document.getElementById('alert-result');
-        el.style.display = 'block';
-        el.style.color = data.success ? '#16a34a' : '#dc2626';
-        el.innerHTML = (data.success ? '[ok] ' : '[fail] ') + data.message;
+        CardioWatchUI.showToast(data.message, data.success ? 'success' : 'error');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Test Alert';
     });

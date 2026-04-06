@@ -1,29 +1,143 @@
 {% extends "base.html" %}
-{% block title %}Privacy - CardioWatch{% endblock %}
+{% block title %}Privacy – CardioWatch{% endblock %}
+
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title"><i class="fas fa-shield-alt"></i> Privacy & Data Management</h1>
-    <p class="page-subtitle">HIPAA-aligned data practices for CardioWatch</p>
+    <h1 class="page-title"><i class="fas fa-shield-alt"></i> Privacy &amp; Data Management</h1>
+    <p class="page-subtitle">HIPAA-aligned data practices for CardioWatch — synthetic demo environment</p>
 </div>
-<div class="card" style="max-width:800px;">
-    <h2 style="color:#3b82f6; margin-bottom:1rem;">Data We Use</h2>
-    <ul style="line-height:2; margin-left:1.5rem;">
-        <li>FHIR Patient demographics (name, DOB, gender)</li>
-        <li>Blood pressure Observation resources (LOINC 85354-9)</li>
-        <li>Condition and MedicationRequest resources</li>
-        <li>All demo data is <strong>Synthea-generated synthetic data</strong> - no real patient data</li>
+
+<!-- DATA WE ACCESS -->
+<div class="card" style="max-width:820px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-database" style="color:#3b82f6;"></i> FHIR Resources Accessed</div>
+    </div>
+    <p style="color:#475569; margin-bottom:1rem; font-size:0.9rem;">
+        CardioWatch reads the following FHIR R4 resource types from the HAPI public demo server.
+        No write operations are performed against the server.
+    </p>
+    <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+        <thead>
+            <tr style="background:#f8fafc; border-bottom:2px solid #e2e8f0;">
+                <th style="padding:0.6rem 0.75rem; text-align:left; color:#64748b; font-weight:600;">Resource</th>
+                <th style="padding:0.6rem 0.75rem; text-align:left; color:#64748b; font-weight:600;">Fields Used</th>
+                <th style="padding:0.6rem 0.75rem; text-align:left; color:#64748b; font-weight:600;">Purpose</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:0.6rem 0.75rem;"><span class="tag tag-blue">Patient</span></td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">name, birthDate, gender, identifier</td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">Display demographics on dashboard and detail pages</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9; background:#fafafa;">
+                <td style="padding:0.6rem 0.75rem;"><span class="tag tag-blue">Observation</span></td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">LOINC 85354-9, components 8480-6 / 8462-4 (BP), 8867-4 (HR)</td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">AHA/ACC classification, trend analysis, time-series chart</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:0.6rem 0.75rem;"><span class="tag tag-blue">Condition</span></td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">code.text, clinicalStatus</td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">Display active diagnoses on patient detail page</td>
+            </tr>
+            <tr>
+                <td style="padding:0.6rem 0.75rem;"><span class="tag tag-blue">MedicationRequest</span></td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">medicationCodeableConcept.text, status</td>
+                <td style="padding:0.6rem 0.75rem; color:#475569;">Display current medications on patient detail page</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- SECURITY PRACTICES -->
+<div class="card" style="max-width:820px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-lock" style="color:#16a34a;"></i> Security Practices</div>
+    </div>
+    <ul style="list-style:none; display:flex; flex-direction:column; gap:0.75rem;">
+        <li style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fas fa-check-circle" style="color:#16a34a; margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>No real PHI stored or transmitted.</strong>
+                <span style="color:#64748b; font-size:0.875rem; margin-left:0.3rem;">
+                    All patient data is Synthea-generated synthetic data. No real patient identifiers are used at any stage.
+                </span>
+            </div>
+        </li>
+        <li style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fas fa-check-circle" style="color:#16a34a; margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>FHIR server access over HTTPS.</strong>
+                <span style="color:#64748b; font-size:0.875rem; margin-left:0.3rem;">
+                    All queries to hapi.fhir.org are made via HTTPS. The application performs read-only GET requests only.
+                </span>
+            </div>
+        </li>
+        <li style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fas fa-check-circle" style="color:#16a34a; margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>Email alerts sent over TLS (SMTP).</strong>
+                <span style="color:#64748b; font-size:0.875rem; margin-left:0.3rem;">
+                    Alert emails are delivered via Gmail SMTP with TLS encryption. Alerts contain only synthetic patient identifiers.
+                </span>
+            </div>
+        </li>
+        <li style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fas fa-check-circle" style="color:#16a34a; margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>In-memory only — no persistent database in demo mode.</strong>
+                <span style="color:#64748b; font-size:0.875rem; margin-left:0.3rem;">
+                    Patient data is held in memory for the duration of the session and is not written to disk or any external store.
+                </span>
+            </div>
+        </li>
+        <li style="display:flex; align-items:flex-start; gap:0.75rem;">
+            <i class="fas fa-check-circle" style="color:#16a34a; margin-top:2px; flex-shrink:0;"></i>
+            <div>
+                <strong>Password-gated clinical access.</strong>
+                <span style="color:#64748b; font-size:0.875rem; margin-left:0.3rem;">
+                    All patient-facing routes require session authentication. Sessions are cleared on logout and do not persist across server restarts.
+                </span>
+            </div>
+        </li>
     </ul>
-    <hr style="border-color:#e2e8f0; margin:1.5rem 0;">
-    <h2 style="color:#3b82f6; margin-bottom:1rem;">Security Practices</h2>
-    <ul style="line-height:2; margin-left:1.5rem;">
-        <li>[ok] No real PHI stored or transmitted</li>
-        <li>[ok] FHIR server access via standard HTTPS</li>
-        <li>[ok] Email alerts sent over TLS (SMTP)</li>
-        <li>[ok] In-memory only - no persistent database in demo mode</li>
-    </ul>
-    <hr style="border-color:#e2e8f0; margin:1.5rem 0;">
-    <a href="/api/export-data" target="_blank" class="btn btn-primary">
-        <i class="fas fa-download"></i> Export Data (JSON)
-    </a>
+</div>
+
+<!-- DATA EXPORT & DELETION -->
+<div class="card" style="max-width:820px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-file-export" style="color:#7c3aed;"></i> Data Export &amp; Deletion</div>
+    </div>
+    <p style="color:#475569; font-size:0.9rem; margin-bottom:1.25rem;">
+        Because CardioWatch operates exclusively on synthetic data in demo mode, there is no real patient data to delete.
+        The export endpoint below provides a full JSON snapshot of the current in-memory dataset — useful for audit,
+        grading, or offline inspection. Restarting the server clears all in-memory state.
+    </p>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+        <a href="/api/export-data" target="_blank" class="btn btn-primary">
+            <i class="fas fa-download"></i> Export Dataset (JSON)
+        </a>
+        <span style="color:#94a3b8; font-size:0.8rem;">
+            Returns all patient records, observations, conditions, and medications as a structured JSON file.
+        </span>
+    </div>
+</div>
+
+<!-- SYNTHETIC DATA NOTICE -->
+<div class="card" style="max-width:820px; background:#f0fdf4; border-color:#86efac;">
+    <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+        <i class="fas fa-info-circle" style="color:#16a34a; font-size:1.2rem; margin-top:2px; flex-shrink:0;"></i>
+        <div>
+            <strong style="color:#166534;">Synthetic Data Notice</strong>
+            <p style="color:#166534; font-size:0.875rem; margin-top:0.25rem;">
+                All data displayed in this application was generated using
+                <a href="https://github.com/synthetichealth/synthea" target="_blank"
+                   style="color:#15803d;">Synthea</a>
+                with the hypertension and cardiovascular disease modules enabled.
+                No real patient records were used at any stage of development or testing.
+                This application is a course project prototype and is not intended for clinical deployment.
+            </p>
+        </div>
+    </div>
 </div>
 {% endblock %}

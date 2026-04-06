@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Clinical Tools - CardioWatch{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title"><i class="fas fa-stethoscope"></i> Clinical Tools</h1>
+    <p class="page-subtitle">Interactive tools for blood pressure classification and AHA/ACC reference</p>
+</div>
+
+<div class="grid grid-2">
+
+    <!-- BP RISK CALCULATOR -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-calculator"></i> BP Risk Calculator</span>
+        </div>
+        <p style="color:#64748b; font-size:0.875rem; margin-bottom:1.25rem;">
+            Enter any blood pressure reading to instantly classify it using the
+            2017 AHA/ACC Hypertension Guidelines.
+        </p>
+
+        <div style="display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+            <div style="flex:1; min-width:100px;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#374151; margin-bottom:0.3rem;">
+                    Systolic (mmHg)
+                </label>
+                <input id="calc-sys" type="number" min="60" max="300" placeholder="e.g. 145"
+                    style="width:100%; padding:0.6rem 0.75rem; border:1px solid #d1d5db;
+                           border-radius:6px; font-size:1rem;">
+            </div>
+            <div style="flex:1; min-width:100px;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#374151; margin-bottom:0.3rem;">
+                    Diastolic (mmHg)
+                </label>
+                <input id="calc-dia" type="number" min="40" max="200" placeholder="e.g. 92"
+                    style="width:100%; padding:0.6rem 0.75rem; border:1px solid #d1d5db;
+                           border-radius:6px; font-size:1rem;">
+            </div>
+        </div>
+
+        <button onclick="runCalculator()" class="btn btn-primary" style="width:100%; margin-bottom:1.25rem;">
+            <i class="fas fa-search"></i> Classify Blood Pressure
+        </button>
+
+        <!-- RESULT PANEL -->
+        <div id="calc-result" style="display:none; border-radius:10px; padding:1.25rem; text-align:center;">
+            <div id="calc-badge" style="display:inline-block; padding:0.4rem 1.25rem; border-radius:20px;
+                font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.75rem;"></div>
+            <div id="calc-reading" style="font-size:2.25rem; font-weight:700; margin-bottom:0.25rem;"></div>
+            <div style="color:#64748b; font-size:0.8rem; margin-bottom:1rem;">mmHg</div>
+            <div id="calc-label" style="font-size:1.1rem; font-weight:600; margin-bottom:1rem;"></div>
+            <div id="calc-action" style="font-size:0.875rem; background:rgba(0,0,0,0.04);
+                padding:0.75rem 1rem; border-radius:8px; text-align:left; line-height:1.6;"></div>
+        </div>
+    </div>
+
+    <!-- AHA/ACC REFERENCE TABLE -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-book-medical"></i> AHA/ACC Classification Reference</span>
+        </div>
+        <p style="color:#64748b; font-size:0.875rem; margin-bottom:1rem;">
+            2017 ACC/AHA Hypertension Guideline — Whelton et al., JACC 2018
+        </p>
+
+        <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+            <thead>
+                <tr style="background:#f8fafc;">
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #e2e8f0; color:#374151;">Category</th>
+                    <th style="padding:10px; text-align:center; border-bottom:2px solid #e2e8f0; color:#374151;">Systolic</th>
+                    <th style="padding:10px; text-align:center; border-bottom:2px solid #e2e8f0; color:#374151;">Diastolic</th>
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #e2e8f0; color:#374151;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                        <span class="badge badge-green">Normal</span>
+                    </td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">&lt; 120</td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">and &lt; 80</td>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9; color:#64748b;">Annual review; promote healthy habits</td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                        <span class="badge badge-yellow">Elevated</span>
+                    </td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">120–129</td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">and &lt; 80</td>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9; color:#64748b;">Lifestyle changes; recheck in 3–6 months</td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                        <span class="badge badge-orange">Stage 1 HTN</span>
+                    </td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">130–139</td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">or 80–89</td>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9; color:#64748b;">Lifestyle + consider medication; recheck in 1 month</td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                        <span class="badge badge-red">Stage 2 HTN</span>
+                    </td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">≥ 140</td>
+                    <td style="padding:10px; text-align:center; border-bottom:1px solid #f1f5f9;">or ≥ 90</td>
+                    <td style="padding:10px; border-bottom:1px solid #f1f5f9; color:#64748b;">Start medication; urgent follow-up within 1 week</td>
+                </tr>
+                <tr>
+                    <td style="padding:10px;">
+                        <span class="badge badge-purple">Crisis</span>
+                    </td>
+                    <td style="padding:10px; text-align:center;">&gt; 180</td>
+                    <td style="padding:10px; text-align:center;">or &gt; 120</td>
+                    <td style="padding:10px; color:#64748b;">Refer to emergency care immediately</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top:1rem; padding:0.75rem 1rem; background:#f0f9ff;
+                    border-radius:8px; font-size:0.8rem; color:#1e40af; border-left:3px solid #3b82f6;">
+            <i class="fas fa-info-circle"></i>
+            Classification uses the higher-severity rule: a reading is placed in the highest category
+            triggered by either the systolic or diastolic value.
+        </div>
+    </div>
+</div>
+
+<!-- QUICK EXAMPLES -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-bolt"></i> Quick Examples</span>
+    </div>
+    <p style="color:#64748b; font-size:0.875rem; margin-bottom:1rem;">Click any example to classify it instantly.</p>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        {% set examples = [
+            (115, 72, 'Normal'),
+            (125, 78, 'Elevated'),
+            (135, 85, 'Stage 1'),
+            (150, 95, 'Stage 2'),
+            (185, 115, 'Crisis')
+        ] %}
+        {% for sys, dia, label in examples %}
+        <button onclick="loadExample({{ sys }}, {{ dia }})"
+            class="btn btn-secondary"
+            style="font-size:0.8rem;">
+            {{ sys }}/{{ dia }} <span style="color:#94a3b8;">({{ label }})</span>
+        </button>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ACTIONS = {
+    normal:  'Promote healthy lifestyle habits (diet, exercise, no smoking). Schedule annual review.',
+    elevated:'Recommend DASH diet, weight loss if overweight, and regular aerobic exercise. Recheck blood pressure in 3–6 months.',
+    stage1:  'Initiate lifestyle modifications. Evaluate 10-year CVD risk to decide whether medication is appropriate. Recheck in 1 month.',
+    stage2:  'Start antihypertensive medication in addition to lifestyle changes. Schedule urgent follow-up within 1 week.',
+    crisis:  'Refer patient to emergency care immediately. Assess for end-organ damage (chest pain, shortness of breath, neurological symptoms).',
+};
+
+const COLORS = {
+    normal:  { bg: '#dcfce7', color: '#166534', badge: 'badge-green' },
+    elevated:{ bg: '#fef9c3', color: '#854d0e', badge: 'badge-yellow' },
+    stage1:  { bg: '#ffedd5', color: '#9a3412', badge: 'badge-orange' },
+    stage2:  { bg: '#fee2e2', color: '#991b1b', badge: 'badge-red' },
+    crisis:  { bg: '#ede9fe', color: '#5b21b6', badge: 'badge-purple' },
+};
+
+function runCalculator() {
+    const sys = parseInt(document.getElementById('calc-sys').value);
+    const dia = parseInt(document.getElementById('calc-dia').value);
+    if (isNaN(sys) || isNaN(dia) || sys < 60 || dia < 40) {
+        CardioWatchUI.showToast('Please enter valid systolic and diastolic values.', 'error');
+        return;
+    }
+
+    fetch('/api/classify-bp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systolic: sys, diastolic: dia })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const cat   = data.category;
+        const style = COLORS[cat];
+        const panel = document.getElementById('calc-result');
+
+        document.getElementById('calc-reading').textContent = sys + '/' + dia;
+        document.getElementById('calc-reading').style.color = style.color;
+        document.getElementById('calc-label').textContent   = data.label;
+        document.getElementById('calc-label').style.color   = style.color;
+        document.getElementById('calc-action').textContent  = ACTIONS[cat];
+
+        const badge = document.getElementById('calc-badge');
+        badge.textContent   = data.label;
+        badge.style.background = style.bg;
+        badge.style.color      = style.color;
+
+        panel.style.background = style.bg + '80';
+        panel.style.border     = '1px solid ' + style.color + '40';
+        panel.style.display    = 'block';
+    })
+    .catch(() => CardioWatchUI.showToast('Classification request failed.', 'error'));
+}
+
+function loadExample(sys, dia) {
+    document.getElementById('calc-sys').value = sys;
+    document.getElementById('calc-dia').value = dia;
+    runCalculator();
+}
+
+// Allow Enter key to trigger classification
+['calc-sys', 'calc-dia'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') runCalculator();
+    });
+});
+</script>
+{% endblock %}

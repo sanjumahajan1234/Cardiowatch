@@ -6,6 +6,7 @@ import smtplib
 from email.mime.text import MIMEText
 import threading
 import time
+import uuid
 import requests as http_requests
 from functools import wraps
 
@@ -343,6 +344,9 @@ for p in DEMO_PATIENTS_RAW:
 PATIENTS = []
 USING_FHIR = False
 
+# In-memory clinician notes store: { patient_id: [{ id, text, timestamp }] }
+PATIENT_NOTES = {}
+
 def load_patients():
     """
     Attempts live HAPI FHIR patient loading first.
@@ -548,6 +552,8 @@ def patient_detail(patient_id):
     trend = patient.get('trend', bp_trend(observations))
     stale = patient.get('days_since_reading', 0) > 30
 
+    notes = PATIENT_NOTES.get(patient_id, [])
+
     return render_template('patient_detail.html',
         patient=patient,
         chart_labels=chart_labels,
@@ -557,6 +563,7 @@ def patient_detail(patient_id):
         trend=trend,
         stale=stale,
         BP_CATEGORIES=BP_CATEGORIES,
+        notes=notes,
     )
 
 @app.route('/analytics')
@@ -900,6 +907,52 @@ def population_report():
         mimetype='text/plain',
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
+
+# ============================================================================
+# CLINICAL TOOLS PAGE
+# ============================================================================
+
+@app.route('/tools')
+@login_required
+def tools():
+    return render_template('tools.html', BP_CATEGORIES=BP_CATEGORIES)
+
+# ============================================================================
+# CLINICIAN NOTES
+# ============================================================================
+
+@app.route('/patient/<int:patient_id>/note', methods=['POST'])
+@login_required
+def add_patient_note(patient_id):
+    patient = next((p for p in PATIENTS if p['id'] == patient_id), None)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+    data = request.json or {}
+    text = data.get('text', '').strip()
+    if not text:
+        return jsonify({'error': 'Note text is required'}), 400
+    note = {
+        'id':        str(uuid.uuid4())[:8],
+        'text':      text,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M'),
+    }
+    PATIENT_NOTES.setdefault(patient_id, []).insert(0, note)
+    return jsonify({'success': True, 'note': note})
+
+@app.route('/patient/<int:patient_id>/note/<note_id>', methods=['DELETE'])
+@login_required
+def delete_patient_note(patient_id, note_id):
+    notes = PATIENT_NOTES.get(patient_id, [])
+    PATIENT_NOTES[patient_id] = [n for n in notes if n['id'] != note_id]
+    return jsonify({'success': True})
+
+# ============================================================================
+# ERROR HANDLERS
+# ============================================================================
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
 
 # ============================================================================
 # LAUNCH

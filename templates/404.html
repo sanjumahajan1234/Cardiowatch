@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Not Found - CardioWatch{% endblock %}
+
+{% block content %}
+<div style="text-align:center; padding:4rem 2rem;">
+    <div style="font-size:5rem; color:#e2e8f0; margin-bottom:1rem;">
+        <i class="fas fa-heartbeat"></i>
+    </div>
+    <h1 style="font-size:4rem; font-weight:700; color:#e2e8f0; margin-bottom:0.5rem;">404</h1>
+    <h2 style="font-size:1.4rem; font-weight:600; color:#475569; margin-bottom:0.75rem;">Page Not Found</h2>
+    <p style="color:#94a3b8; max-width:400px; margin:0 auto 2rem;">
+        The page you're looking for doesn't exist, or the patient record you requested
+        is not in the current cohort.
+    </p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+        <a href="/" class="btn btn-primary">
+            <i class="fas fa-th-large"></i> Back to Dashboard
+        </a>
+        <a href="/analytics" class="btn btn-secondary">
+            <i class="fas fa-chart-bar"></i> Population Analytics
+        </a>
+    </div>
+</div>
+{% endblock %}
