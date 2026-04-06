@@ -5,26 +5,77 @@
     <h1 class="page-title"><i class="fas fa-server"></i> FHIR Server Status</h1>
     <p class="page-subtitle">Connection to HAPI FHIR R4 Demo Server</p>
 </div>
-<div class="card" style="max-width:600px;">
-    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+<div class="card" style="max-width:640px;">
+
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem;">
         {% if connected %}
-        <span style="font-size:2rem;">[ok]</span>
+        <div style="width:48px; height:48px; background:#dcfce7; border-radius:50%;
+                    display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fas fa-check-circle" style="color:#16a34a; font-size:1.4rem;"></i>
+        </div>
         <div>
             <strong style="color:#16a34a; font-size:1.1rem;">Connected</strong><br>
             <small style="color:#64748b;">FHIR Version: {{ fhir_version }}</small>
         </div>
         {% else %}
-        <span style="font-size:2rem;">[fail]</span>
+        <div style="width:48px; height:48px; background:#fee2e2; border-radius:50%;
+                    display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fas fa-times-circle" style="color:#dc2626; font-size:1.4rem;"></i>
+        </div>
         <div>
-            <strong style="color:#dc2626; font-size:1.1rem;">Offline - using demo data</strong><br>
+            <strong style="color:#dc2626; font-size:1.1rem;">Offline — using synthetic demo data</strong><br>
             <small style="color:#64748b;">Fallback: Synthea-generated in-memory patients</small>
         </div>
         {% endif %}
     </div>
-    <hr style="border-color:#e2e8f0;">
-    <p><strong>Server URL:</strong> <code>{{ fhir_base }}</code></p>
-    <p><strong>Resources Used:</strong> Patient | Observation (LOINC 85354-9) | Condition | MedicationRequest</p>
-    <p><strong>Data:</strong> All demo data is Synthea-generated synthetic patients. No real PHI.</p>
-    <a href="/" class="btn btn-primary" style="margin-top:1rem;"><-- Back to Dashboard</a>
+
+    <hr style="border-color:#e2e8f0; margin-bottom:1.25rem;">
+
+    <div style="display:grid; gap:0.75rem; font-size:0.9rem;">
+        <div style="display:flex; gap:0.75rem;">
+            <span style="color:#94a3b8; min-width:130px;">Server URL</span>
+            <code style="color:#1e293b;">{{ fhir_base }}</code>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <span style="color:#94a3b8; min-width:130px;">Resources Used</span>
+            <span style="color:#1e293b;">Patient · Observation (LOINC 85354-9) · Condition · MedicationRequest</span>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <span style="color:#94a3b8; min-width:130px;">Patients Loaded</span>
+            <span style="color:#1e293b; font-weight:600;">{{ patient_count }}</span>
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <span style="color:#94a3b8; min-width:130px;">Data Mode</span>
+            {% if using_fhir %}
+            <span style="background:#dcfce7; color:#16a34a; padding:2px 10px;
+                         border-radius:12px; font-size:0.8rem; font-weight:600;">
+                Live FHIR Data
+            </span>
+            {% else %}
+            <span style="background:#dbeafe; color:#1e40af; padding:2px 10px;
+                         border-radius:12px; font-size:0.8rem; font-weight:600;">
+                Synthea / FHIR R4 Fallback
+            </span>
+            {% endif %}
+        </div>
+        <div style="display:flex; gap:0.75rem;">
+            <span style="color:#94a3b8; min-width:130px;">PHI Policy</span>
+            <span style="color:#1e293b;">All data is Synthea-generated synthetic patients. No real PHI.</span>
+        </div>
+    </div>
+
+    <div style="margin-top:1.5rem; padding:0.75rem 1rem; background:#f0f9ff;
+                border-left:3px solid #3b82f6; border-radius:0 8px 8px 0; font-size:0.8rem; color:#1e40af;">
+        <i class="fas fa-info-circle"></i>
+        The application attempts a live FHIR connection at startup. If the server is unreachable,
+        it falls back automatically to the built-in Synthea cohort so demos are never blocked by
+        server availability.
+    </div>
+
+    <div style="margin-top:1.25rem;">
+        <a href="/" class="btn btn-primary btn-small">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
 </div>
 {% endblock %}

@@ -1,2 +1,4 @@
 .env
 practicum*.tex
+.DS_Store
+__pycache__/*
