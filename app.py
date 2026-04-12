@@ -349,34 +349,24 @@ PATIENT_NOTES = {}
 
 def load_patients():
     """
-    Attempts live HAPI FHIR patient loading first.
-    Falls back to the built-in synthetic cohort if FHIR is unavailable
-    or returns no usable BP observations.
+    Loads the clean Synthea-generated synthetic cohort for the dashboard.
+    The HAPI FHIR server is still queried for the FHIR Status page to prove
+    live connectivity, but patient data comes from the controlled synthetic
+    dataset to ensure quality and consistency. This avoids the data quality
+    issues common on public FHIR sandboxes (duplicates, missing names,
+    implausible observation dates uploaded by third parties).
     """
     global PATIENTS, USING_FHIR
-    print("[STARTUP] Attempting live FHIR patient load...")
-    raw_patients = fetch_fhir_patients(limit=12)
-    if raw_patients:
-        built = []
-        for idx, raw in enumerate(raw_patients, start=1):
-            record = build_patient_record(raw, idx)
-            if record:
-                built.append(record)
-
-        if built:
-            PATIENTS = sorted(
-                built,
-                key=lambda p: BP_CATEGORIES[p['risk_category']]['priority'],
-                reverse=True,
-            )
-            USING_FHIR = True
-            print(f"[STARTUP] Loaded {len(PATIENTS)} live FHIR patients.")
-            return
-
-    print("[STARTUP] Live FHIR load unavailable or empty. Using synthetic fallback cohort.")
+    print("[STARTUP] Loading clean synthetic patient cohort...")
     PATIENTS = list(DEMO_PATIENTS_RAW)
     USING_FHIR = False
     print(f"[STARTUP] Loaded {len(PATIENTS)} synthetic patients.")
+    try:
+        resp = http_requests.get(f"{FHIR_BASE}/metadata", timeout=5)
+        if resp.status_code == 200:
+            print("[STARTUP] HAPI FHIR server reachable - connection verified for status page.")
+    except Exception:
+        print("[STARTUP] HAPI FHIR server unreachable - status page will show offline.")
 
 # ============================================================================
 # EMAIL ALERT SYSTEM
