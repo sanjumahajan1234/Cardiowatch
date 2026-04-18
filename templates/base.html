@@ -14,22 +14,18 @@
                 <i class="fas fa-heartbeat"></i> CardioWatch
             </a>
             <ul class="nav-menu">
-                <li><a href="/" class="nav-link"><i class="fas fa-th-large"></i> <span>Dashboard</span></a></li>
+                <li><a href="/" class="nav-link"><i class="fas fa-th-large"></i> <span>Dashboard</span>
+                    {% if high_risk_count > 0 %}
+                    <span style="background:#dc2626;color:white;border-radius:10px;padding:1px 7px;
+                                 font-size:0.7rem;margin-left:4px;font-weight:700;">
+                        {{ high_risk_count }}
+                    </span>
+                    {% endif %}
+                </a></li>
                 <li><a href="/analytics" class="nav-link"><i class="fas fa-chart-bar"></i> <span>Analytics</span></a></li>
-                <li><a href="/tools" class="nav-link"><i class="fas fa-stethoscope"></i> <span>Tools</span></a></li>
                 <li><a href="/fhir-status" class="nav-link"><i class="fas fa-server"></i> <span>FHIR Status</span></a></li>
                 <li><a href="/privacy" class="nav-link"><i class="fas fa-shield-alt"></i> <span>Privacy</span></a></li>
             </ul>
-            {% if session.get('logged_in') %}
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-left:1.5rem; padding-left:1.5rem;
-                        border-left:1px solid #e2e8f0; font-size:0.8rem; color:#94a3b8;">
-                <i class="fas fa-user-md" style="color:#64748b;"></i>
-                <span style="color:#64748b;">Clinician</span>
-                <a href="/logout" class="btn btn-secondary btn-small" style="padding:0.3rem 0.6rem;">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-            {% endif %}
         </div>
     </nav>
 

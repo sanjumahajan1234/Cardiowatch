@@ -77,6 +77,28 @@ def bp_trend(observations):
     """
     if len(observations) < 4:
         return 'stable'
+
+def bp_stats(observations):
+    """
+    Compute min, max and average systolic and diastolic
+    over the full observation history for a patient.
+    Returns a dict with sys_min, sys_max, sys_avg,
+    dia_min, dia_max, dia_avg.
+    """
+    if not observations:
+        return None
+    sys_vals = [o['systolic']  for o in observations]
+    dia_vals = [o['diastolic'] for o in observations]
+    return {
+        'sys_min': min(sys_vals),
+        'sys_max': max(sys_vals),
+        'sys_avg': round(sum(sys_vals) / len(sys_vals), 1),
+        'dia_min': min(dia_vals),
+        'dia_max': max(dia_vals),
+        'dia_avg': round(sum(dia_vals) / len(dia_vals), 1),
+        'count':   len(observations),
+    }
+
     recent = observations[-3:]
     prior  = observations[-6:-3] if len(observations) >= 6 else observations[:3]
     avg_recent = sum(o['systolic'] for o in recent) / len(recent)
@@ -447,6 +469,19 @@ def monitor_patients_background():
                         print(f"  [SKIP] {patient['name']}: already alerted today")
                 else:
                     print(f"  [OK] {patient['name']}: {patient['risk_label']}")
+            # Stale reading alerts -- notify if no reading in 30+ days
+            for patient in PATIENTS:
+                if patient.get('days_since_reading', 0) > 30:
+                    stale_key = f"stale_{patient['id']}_{today}"
+                    if stale_key not in last_alert_sent:
+                        send_bp_alert(
+                            patient['name'],
+                            patient.get('latest_systolic', 0),
+                            patient.get('latest_diastolic', 0),
+                            f"No reading in {patient['days_since_reading']} days -- follow-up needed"
+                        )
+                        last_alert_sent[stale_key] = True
+                        print(f"  [STALE] Alert sent for {patient['name']}: {patient['days_since_reading']} days")
             print(f"  Alerts sent this cycle: {alerts}")
             print(f"  Next check in 5 minutes")
         except Exception as e:
@@ -466,11 +501,13 @@ def start_background_monitoring():
 # ============================================================================
 @app.context_processor
 def inject_globals():
+    high_risk = sum(1 for p in PATIENTS if p.get('risk_category') in ('stage2', 'crisis'))
     return {
-        'datetime':     datetime,
-        'now':          datetime.now(),
-        'BP_CATEGORIES': BP_CATEGORIES,
-        'using_fhir':   USING_FHIR,
+        'datetime':       datetime,
+        'now':            datetime.now(),
+        'BP_CATEGORIES':  BP_CATEGORIES,
+        'using_fhir':     USING_FHIR,
+        'high_risk_count': high_risk,
     }
 
 # ============================================================================
@@ -546,6 +583,7 @@ def patient_detail(patient_id):
 
     notes = PATIENT_NOTES.get(patient_id, [])
 
+    stats = bp_stats(observations)
     return render_template('patient_detail.html',
         patient=patient,
         chart_labels=chart_labels,
@@ -554,6 +592,7 @@ def patient_detail(patient_id):
         thresholds=thresholds,
         trend=trend,
         stale=stale,
+        stats=stats,
         BP_CATEGORIES=BP_CATEGORIES,
         notes=notes,
     )
