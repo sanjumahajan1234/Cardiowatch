@@ -988,6 +988,8 @@ def not_found(e):
 # ============================================================================
 # LAUNCH
 # ============================================================================
+load_patients()
+start_background_monitoring()
 if __name__ == '__main__':
     load_patients()
     start_background_monitoring()
